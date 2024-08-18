@@ -1,0 +1,70 @@
+---
+title: "Association rule mining"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+Revisit the notes on association rule mining and the R example on music playlists: **playlists.R** and **playlists.csv**. Then use the data on grocery purchases in **groceries.txt** and find some interesting association rules for these shopping baskets. The data file is a list of shopping baskets: one person's basket for each row, with multiple items per row separated by commas. Pick your own thresholds for lift and confidence; just be clear what these thresholds are and say why you picked them. Do your discovered item sets make sense? Present your discoveries in an interesting and visually appealing way.  
+
+Notes:  
+This is an exercise in visual and numerical story-telling. Do be clear in your description of what you've done, but keep the focus on the data, the figures, and the insights your analysis has drawn from the data, rather than technical details.   
+The data file is a list of baskets: one row per basket, with multiple items per row separated by commas. You'll have to cobble together your own code for processing this into the format expected by the "arules" package. This is not intrinsically all that hard, but it is the kind of data-wrangling wrinkle you'll encounter frequently on real problems, where your software package expects data in one format and the data comes in a different format. Figuring out how to bridge that gap is part of the assignment, and so we won't be giving tips on this front.   
+```{r}
+library(tidyverse)
+library(arules)  
+library(arulesViz)
+
+groceries_raw <- read.transactions("/Users/aradelfin/Desktop/Intro to Machine Learning/groceries.txt", sep=",", format = "basket")
+
+summary(groceries_raw)
+itemFrequencyPlot(groceries_raw, topN=20, type="absolute", main="Top 20 Most Frequent Items")
+rules <- apriori(groceries_raw, parameter=list(support=0.01, confidence=0.3, maxlen=4))
+summary(rules)
+inspect(rules)
+```
+KKF
+```{r}
+high_lift_rules <- subset(rules, lift > 2)
+high_confidence_rules <- subset(rules, confidence > 0.4)
+
+inspect(high_lift_rules)
+inspect(high_confidence_rules)
+
+plot(rules)
+plot(rules, measure = c("support", "lift"), shading = "confidence")
+plot(rules, method = "two-key plot")
+plot(high_lift_rules, method="graph", control=list(type="items"))
+
+#graph_rules <- associations2igraph(high_lift_rules, associationsAsNodes = FALSE)
+#igraph::write_graph(graph_rules, file='groceries_rules0.graphml', format = "graphml")
+```
+**This analysis aims to uncover patterns in grocery shopping data that can inform business strategies like cross-selling, inventory management, and targeted marketing.**     
+
+To ensure the most relevant and impactful rules were identified, thresholds were set for support, confidence, and lift. Specifically, a support threshold of 0.01 was used, meaning that the rule applies to at least 1% of all transactions. Confidence was set at 0.3, indicating that in 30% of cases where the left-hand side (LHS) items are bought, the right-hand side (RHS) items are also purchased. Additionally, a lift threshold of greater than 2.0 was applied, ensuring that the RHS items are at least twice as likely to be bought when the LHS items are purchased compared to when they are not.   
+
+**Key Findings**   
+
+**1. Beef and Root Vegetables**     
+Rule: {beef} => {root vegetables}    
+Lift: 3.04        
+Confidence: 33.13%       
+
+This rule suggests that customers who buy beef are three times more likely to purchase root vegetables compared to a random customer. The strong complementarity between these items makes this pairing a potential target for promotions or product bundling strategies.    
+
+**2. Whipped/Sour Cream and Yogurt**  
+Rule: {whipped/sour cream} => {yogurt}    
+Lift: 2.53    
+Confidence: 49.0%    
+
+This rule suggests that customers who purchase whipped or sour cream are more than twice as likely to buy yogurt as well. The confidence level indicates that nearly half of the transactions involving whipped or sour cream also include yogurt. This insight could be leveraged by offering promotions that combine these dairy products. For example, a “buy whipped cream, get a discount on yogurt” offer could increase sales of both items. Additionally, these items could be placed together in the dairy section to encourage customers to purchase them together.
+
+**3. Citrus Fruit, Root Vegetables, and Other Vegetables**   
+Rule: {citrus fruit, root vegetables} => {other vegetables}    
+Lift: 3.03    
+Confidence: 58.6%    
+
+The association between citrus fruit, root vegetables, and other vegetables indicates a natural grouping in customer shopping habits. With customers being three times more likely to buy other vegetables when they already have citrus fruit and root vegetables in their basket.    
+
+**Conclusion**    
+In analyzing the grocery shopping data, we identified several significant association rules that reveal important insights into customer purchasing behavior. By focusing on patterns with high lift and confidence, we discovered strong correlations between products like beef and root vegetables, citrus fruit and other vegetables, and dairy combinations such as curd, yogurt, and whole milk. These insights offer actionable opportunities for enhancing business strategies, including cross-selling, targeted promotions, and optimized store layouts. For instance, leveraging these associations through strategic product placement or bundled offers can boost sales and improve customer satisfaction.   
